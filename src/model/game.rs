@@ -8,6 +8,7 @@ pub struct Game {
     shoe: Shoe,
     display: DisplayOptions,
     round: RoundState,
+    peel_enabled: bool,
 }
 
 impl Game {
@@ -16,6 +17,7 @@ impl Game {
             shoe: Shoe::new(),
             display: DisplayOptions::new(),
             round: RoundState::new(),
+            peel_enabled: false,
         }
     }
 
@@ -33,6 +35,14 @@ impl Game {
 
     pub fn display_mut(&mut self) -> &mut DisplayOptions {
         &mut self.display
+    }
+
+    pub fn peel_enabled(&self) -> bool {
+        self.peel_enabled
+    }
+
+    pub fn toggle_peel_enabled(&mut self) {
+        self.peel_enabled = !self.peel_enabled;
     }
 
     pub fn next_shoe_round(&mut self) -> Option<BaccaratRound> {
