@@ -9,6 +9,9 @@ use crate::model::display_options::DisplayOptions;
 use crate::model::game::Game;
 use crate::model::round_state::RoundState;
 use crate::view::cards::draw_card;
+use crate::view::scoreboard::{
+    draw_bead_plate, draw_big_road, draw_derived_roads, draw_scoreboard_box,
+};
 
 // Terminal dimensions
 const TERM_ROWS: u16 = 24;
@@ -37,6 +40,14 @@ const ROW_CARD_BOT: u16 = ROW_CARD_TOP + CARD_H - 1; // = 22
 const ROW_SCORE: u16 = TERM_ROWS - 1; // = 23
 
 fn draw_backgrounds(out: &mut io::Stdout) -> io::Result<()> {
+    for row in 0..TERM_ROWS {
+        queue!(
+            out,
+            cursor::MoveTo(0, row),
+            SetBackgroundColor(Color::DarkGrey)
+        )?;
+        write!(out, "{}", " ".repeat(COL_DIVIDER as usize))?;
+    }
     for row in ROW_CARD_TOP..=ROW_CARD_BOT {
         for col in [COL_PLAYER_BOX_L, COL_BANKER_BOX_L] {
             queue!(
@@ -139,8 +150,12 @@ fn draw_card_panels(
 pub fn render(game: &Game, out: &mut io::Stdout) -> io::Result<()> {
     execute!(out, terminal::Clear(ClearType::All), cursor::Hide)?;
     draw_backgrounds(out)?;
+    draw_scoreboard_box(game.shoe_number(), out)?;
     draw_hand_boxes(out)?;
     draw_card_panels(game.round(), game.display(), out)?;
+    draw_bead_plate(game.scoreboard_cache(), out)?;
+    draw_big_road(game.scoreboard_cache(), out)?;
+    draw_derived_roads(game.scoreboard_cache(), out)?;
     queue!(out, ResetColor)?;
     out.flush()
 }

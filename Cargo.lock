@@ -21,6 +21,7 @@ dependencies = [
  "bacc-rs",
  "crossterm",
  "kev-rs",
+ "num-bigint",
 ]
 
 [[package]]

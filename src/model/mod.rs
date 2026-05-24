@@ -2,4 +2,5 @@ pub mod card_window;
 pub mod display_options;
 pub mod game;
 pub mod round_state;
+pub mod scoreboard;
 pub mod shoe;

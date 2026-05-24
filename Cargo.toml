@@ -8,3 +8,4 @@ license = "LGPL-3.0-only"
 crossterm = "0.27"
 bacc = { package = "bacc-rs", version = "0.1.1" }
 kev = { package = "kev-rs", version = "0.1.2" }
+num-bigint = "0.4"

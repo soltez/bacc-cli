@@ -2,14 +2,23 @@ use crate::model::game::Game;
 
 pub fn deal_hand(game: &mut Game) {
     let Some(round) = game.next_shoe_round() else {
+        game.increment_shoe_number();
+        game.scoreboard_mut().clear();
+        game.scoreboard_cache_mut().clear();
         return;
     };
-    game.round_mut().start(round);
+    game.round_mut().start(&round);
+    game.store_pending_round(round);
 }
 
 pub fn advance_deal(game: &mut Game) {
     let peel_enabled = game.peel_enabled();
     game.round_mut().advance_phase(peel_enabled);
+    if game.round().complete()
+        && let Some(round) = game.take_pending_round()
+    {
+        game.update_scoreboard(&round);
+    }
 }
 
 pub fn end_round(game: &mut Game) {

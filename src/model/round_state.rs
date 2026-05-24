@@ -34,7 +34,7 @@ impl RoundState {
         }
     }
 
-    pub fn start(&mut self, round: BaccaratRound) {
+    pub fn start(&mut self, round: &BaccaratRound) {
         let bits = round.encode();
         self.player_cards = round.player_cards().to_vec();
         self.banker_cards = round.banker_cards().to_vec();
