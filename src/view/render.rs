@@ -20,6 +20,18 @@ const TERM_ROWS: u16 = 24;
 // Horizontal divider
 const COL_DIVIDER: u16 = 36;
 
+// Title panel
+const COL_TITLE_R: u16 = 79;
+const TITLE_W: usize = (COL_TITLE_R - COL_PLAYER_BOX_L + 1) as usize; // = 43
+const TITLE_INNER_W: usize = TITLE_W - 2; // = 41
+const ROW_TITLE_TOP: u16 = 0;
+const CREDIT: &str = concat!(
+    "Version ",
+    env!("CARGO_PKG_VERSION"),
+    "  (C)2026     soltez.com"
+);
+const _: () = assert!(CREDIT.len() == TITLE_INNER_W - 4);
+
 // Hand box rows
 const ROW_HAND_BOX_TOP: u16 = 15;
 const ROW_HAND_BOX_BOT: u16 = ROW_HAND_BOX_TOP + 1; // = 16
@@ -38,6 +50,37 @@ pub(crate) const CARD_H: u16 = 6;
 const ROW_CARD_TOP: u16 = ROW_HAND_BOX_BOT + 1; // = 17
 const ROW_CARD_BOT: u16 = ROW_CARD_TOP + CARD_H - 1; // = 22
 const ROW_SCORE: u16 = TERM_ROWS - 1; // = 23
+
+fn draw_title_panel(out: &mut io::Stdout) -> io::Result<()> {
+    queue!(
+        out,
+        cursor::MoveTo(COL_PLAYER_BOX_L, ROW_TITLE_TOP),
+        SetBackgroundColor(Color::DarkMagenta),
+        SetForegroundColor(Color::White)
+    )?;
+    write!(out, "\u{2554}{}", "\u{2550}".repeat(11))?;
+    write!(out, "[ ")?;
+    queue!(out, SetForegroundColor(Color::Yellow))?;
+    write!(out, "B A C C A R A T")?;
+    queue!(out, SetForegroundColor(Color::White))?;
+    write!(out, " ]{}\u{2557}", "\u{2550}".repeat(11))?;
+
+    queue!(
+        out,
+        cursor::MoveTo(COL_PLAYER_BOX_L, ROW_TITLE_TOP + 1),
+        SetForegroundColor(Color::White)
+    )?;
+    write!(out, "\u{2551}")?;
+    queue!(out, SetForegroundColor(Color::Yellow))?;
+    write!(out, "  {}  ", CREDIT)?;
+    queue!(out, SetForegroundColor(Color::White))?;
+    write!(out, "\u{2551}")?;
+
+    queue!(out, cursor::MoveTo(COL_PLAYER_BOX_L, ROW_TITLE_TOP + 2),)?;
+    write!(out, "\u{255A}{}\u{255D}", "\u{2550}".repeat(TITLE_INNER_W))?;
+
+    queue!(out, ResetColor)
+}
 
 fn draw_backgrounds(out: &mut io::Stdout) -> io::Result<()> {
     for row in 0..TERM_ROWS {
@@ -150,6 +193,7 @@ fn draw_card_panels(
 pub fn render(game: &Game, out: &mut io::Stdout) -> io::Result<()> {
     execute!(out, terminal::Clear(ClearType::All), cursor::Hide)?;
     draw_backgrounds(out)?;
+    draw_title_panel(out)?;
     draw_scoreboard_box(game.shoe_number(), out)?;
     draw_hand_boxes(out)?;
     draw_card_panels(game.round(), game.display(), out)?;
