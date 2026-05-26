@@ -4,6 +4,7 @@ use super::display_options::DisplayOptions;
 use super::round_state::RoundState;
 use super::scoreboard::ScoreboardCache;
 use super::shoe::Shoe;
+use super::stats::Stats;
 
 pub struct Game {
     shoe: Shoe,
@@ -11,6 +12,7 @@ pub struct Game {
     round: RoundState,
     scoreboard: BaccaratScoreboard,
     cache: ScoreboardCache,
+    stats: Stats,
     pending_round: Option<BaccaratRound>,
     shoe_number: u32,
     peel_enabled: bool,
@@ -24,6 +26,7 @@ impl Game {
             round: RoundState::new(),
             scoreboard: BaccaratScoreboard::new(),
             cache: ScoreboardCache::new(),
+            stats: Stats::new(),
             pending_round: None,
             shoe_number: 1,
             peel_enabled: false,
@@ -66,9 +69,14 @@ impl Game {
         &mut self.cache
     }
 
-    pub fn update_scoreboard(&mut self, round: &BaccaratRound) {
+    pub fn update_models(&mut self, round: &BaccaratRound) {
         self.scoreboard.update(round);
         self.cache.update(&self.scoreboard);
+        self.stats.update(round, &self.scoreboard);
+    }
+
+    pub fn stats(&self) -> &Stats {
+        &self.stats
     }
 
     pub fn store_pending_round(&mut self, round: BaccaratRound) {

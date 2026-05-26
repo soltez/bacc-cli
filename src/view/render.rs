@@ -12,6 +12,7 @@ use crate::view::cards::draw_card;
 use crate::view::scoreboard::{
     draw_bead_plate, draw_big_road, draw_derived_roads, draw_scoreboard_box,
 };
+use crate::view::stats::draw_stats_panel;
 
 // Terminal dimensions
 const TERM_ROWS: u16 = 24;
@@ -194,6 +195,7 @@ pub fn render(game: &Game, out: &mut io::Stdout) -> io::Result<()> {
     execute!(out, terminal::Clear(ClearType::All), cursor::Hide)?;
     draw_backgrounds(out)?;
     draw_title_panel(out)?;
+    draw_stats_panel(game.stats(), out)?;
     draw_scoreboard_box(game.shoe_number(), out)?;
     draw_hand_boxes(out)?;
     draw_card_panels(game.round(), game.display(), out)?;
