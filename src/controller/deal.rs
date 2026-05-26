@@ -17,7 +17,7 @@ pub fn advance_deal(game: &mut Game) {
     if game.round().complete()
         && let Some(round) = game.take_pending_round()
     {
-        game.update_scoreboard(&round);
+        game.update_models(&round);
     }
 }
 
