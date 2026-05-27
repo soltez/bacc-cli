@@ -50,17 +50,14 @@ fn run() -> io::Result<()> {
                     handle_enter(&mut game);
                 }
             }
-            KeyCode::Backspace => handle_bet_backspace(&mut game),
-            KeyCode::Esc => handle_bet_escape(&mut game),
-            KeyCode::Char('h') | KeyCode::Char('H') => {
-                toggle_show_hands(&mut game);
-            }
-            KeyCode::Char('e') | KeyCode::Char('E') => {
-                toggle_peel_enabled(&mut game);
-            }
-            KeyCode::Char(ch) => {
-                handle_bet_key(&mut game, ch);
-            }
+            KeyCode::Char('h') | KeyCode::Char('H') => toggle_show_hands(&mut game),
+            KeyCode::Char('e') | KeyCode::Char('E') => toggle_peel_enabled(&mut game),
+            code if game.round().is_between_rounds() => match code {
+                KeyCode::Backspace => handle_bet_backspace(&mut game),
+                KeyCode::Esc => handle_bet_escape(&mut game),
+                KeyCode::Char(ch) => handle_bet_key(&mut game, ch),
+                _ => {}
+            },
             _ => {}
         }
     }

@@ -17,7 +17,9 @@ pub fn handle_bet_backspace(game: &mut Game) {
 }
 
 pub fn handle_bet_enter(game: &mut Game) {
-    game.bet_mut().confirm();
+    if !game.bet_mut().confirm() && game.bet().input().is_none_or(|i| i.digits().is_empty()) {
+        game.bet_mut().cancel_input();
+    }
 }
 
 pub fn handle_bet_escape(game: &mut Game) {

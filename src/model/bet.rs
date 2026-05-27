@@ -1,16 +1,3 @@
-pub struct BetConfig {
-    pub min: u32,
-    pub max: u32,
-    pub odds_num: u32,
-    pub odds_den: u32,
-}
-
-impl BetConfig {
-    pub fn format_odds(&self) -> String {
-        format!("{}:{}", self.odds_num, self.odds_den)
-    }
-}
-
 #[derive(Clone, Copy, PartialEq)]
 pub enum BetPick {
     Player,
@@ -19,27 +6,40 @@ pub enum BetPick {
 }
 
 impl BetPick {
-    pub fn config(self) -> BetConfig {
+    pub fn min(self) -> u32 {
         match self {
-            BetPick::Player => BetConfig {
-                min: 200,
-                max: 800,
-                odds_num: 1,
-                odds_den: 1,
-            },
-            BetPick::Tie => BetConfig {
-                min: 25,
-                max: 100,
-                odds_num: 8,
-                odds_den: 1,
-            },
-            BetPick::Banker => BetConfig {
-                min: 200,
-                max: 800,
-                odds_num: 19,
-                odds_den: 20,
-            },
+            BetPick::Player => 200,
+            BetPick::Tie => 25,
+            BetPick::Banker => 200,
         }
+    }
+
+    pub fn max(self) -> u32 {
+        match self {
+            BetPick::Player => 800,
+            BetPick::Tie => 100,
+            BetPick::Banker => 800,
+        }
+    }
+
+    pub fn odds_num(self) -> u32 {
+        match self {
+            BetPick::Player => 1,
+            BetPick::Tie => 8,
+            BetPick::Banker => 19,
+        }
+    }
+
+    pub fn odds_den(self) -> u32 {
+        match self {
+            BetPick::Player => 1,
+            BetPick::Tie => 1,
+            BetPick::Banker => 20,
+        }
+    }
+
+    pub fn format_odds(self) -> String {
+        format!("{}:{}", self.odds_num(), self.odds_den())
     }
 }
 
@@ -144,8 +144,7 @@ impl Bet {
             return false;
         };
         let pick = inp.pick;
-        let cfg = pick.config();
-        if !(cfg.min..=cfg.max).contains(&amount) {
+        if !(pick.min()..=pick.max()).contains(&amount) {
             return false;
         }
         match pick {
@@ -190,23 +189,22 @@ impl Bet {
     pub fn settle(&mut self, outcome_bits: u32) {
         match outcome_bits & 0x03 {
             1 => {
-                let cfg = BetPick::Player.config();
-                self.balance = self
-                    .balance
-                    .saturating_add(self.player_bet * cfg.odds_num / cfg.odds_den * 100);
+                self.balance = self.balance.saturating_add(
+                    self.player_bet * BetPick::Player.odds_num() / BetPick::Player.odds_den() * 100,
+                );
                 self.balance = self.balance.saturating_sub(self.banker_bet * 100);
             }
             2 => {
-                let cfg = BetPick::Banker.config();
-                self.balance = self
-                    .balance
-                    .saturating_add(self.banker_bet * cfg.odds_num / cfg.odds_den * 100);
+                self.balance = self.balance.saturating_add(
+                    self.banker_bet * BetPick::Banker.odds_num() / BetPick::Banker.odds_den() * 100,
+                );
                 self.balance = self.balance.saturating_sub(self.player_bet * 100);
             }
             _ => {
-                let cfg = BetPick::Tie.config();
                 self.balance = self.balance.saturating_add(
-                    self.tie_bet * (cfg.odds_num + cfg.odds_den) / cfg.odds_den * 100,
+                    self.tie_bet * (BetPick::Tie.odds_num() + BetPick::Tie.odds_den())
+                        / BetPick::Tie.odds_den()
+                        * 100,
                 );
             }
         }

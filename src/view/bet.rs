@@ -4,7 +4,7 @@ use crossterm::{
 };
 use std::io::{self, Write};
 
-use crate::model::bet::{Bet, BetConfig, BetPick};
+use crate::model::bet::{Bet, BetPick};
 
 const COL_BET_L: u16 = 63;
 const COL_BET_R: u16 = 79;
@@ -69,9 +69,8 @@ fn draw_label_row(bet: &Bet, out: &mut io::Stdout) -> io::Result<()> {
         queue!(out, SetBackgroundColor(bg))?;
 
         if active_side == Some(*side) {
-            let cfg = side.config();
             queue!(out, SetForegroundColor(Color::White))?;
-            write!(out, "{:>3}~ ", cfg.min)?;
+            write!(out, "{:>3}~ ", side.min())?;
         } else {
             let pos = label.find(*first).unwrap_or(0);
             queue!(out, SetForegroundColor(Color::White))?;
@@ -108,7 +107,6 @@ fn draw_middle_row(bet: &Bet, out: &mut io::Stdout) -> io::Result<()> {
 
     for (idx, side) in sides.iter().enumerate() {
         let bg = SECTION_COLORS[idx];
-        let cfg: BetConfig = side.config();
         queue!(
             out,
             SetBackgroundColor(bg),
@@ -116,11 +114,11 @@ fn draw_middle_row(bet: &Bet, out: &mut io::Stdout) -> io::Result<()> {
         )?;
 
         if active_side == Some(*side) {
-            write!(out, "{:^5}", cfg.max)?;
+            write!(out, "{:^5}", side.max())?;
         } else if bets[idx] > 0 {
             write!(out, "{:>4} ", bets[idx])?;
         } else if show_odds {
-            write!(out, "{:^5}", cfg.format_odds())?;
+            write!(out, "{:^5}", side.format_odds())?;
         } else {
             write!(out, "     ")?;
         }
