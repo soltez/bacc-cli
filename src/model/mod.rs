@@ -1,3 +1,4 @@
+pub mod bet;
 pub mod card_window;
 pub mod display_options;
 pub mod game;
