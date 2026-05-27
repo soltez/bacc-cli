@@ -8,6 +8,7 @@ use std::io::{self, Write};
 use crate::model::display_options::DisplayOptions;
 use crate::model::game::Game;
 use crate::model::round_state::RoundState;
+use crate::view::bet::draw_bet_panel;
 use crate::view::cards::draw_card;
 use crate::view::scoreboard::{
     draw_bead_plate, draw_big_road, draw_derived_roads, draw_scoreboard_box,
@@ -196,6 +197,7 @@ pub fn render(game: &Game, out: &mut io::Stdout) -> io::Result<()> {
     draw_backgrounds(out)?;
     draw_title_panel(out)?;
     draw_stats_panel(game.stats(), out)?;
+    draw_bet_panel(game.bet(), out)?;
     draw_scoreboard_box(game.shoe_number(), out)?;
     draw_hand_boxes(out)?;
     draw_card_panels(game.round(), game.display(), out)?;

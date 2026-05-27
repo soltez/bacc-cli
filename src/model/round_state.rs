@@ -52,6 +52,10 @@ impl RoundState {
         self.phase = 0;
     }
 
+    pub fn is_between_rounds(&self) -> bool {
+        self.phase == 0
+    }
+
     pub fn phase(&self) -> u8 {
         self.phase
     }

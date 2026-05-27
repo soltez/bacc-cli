@@ -1,5 +1,6 @@
 use bacc::{BaccaratRound, BaccaratScoreboard};
 
+use super::bet::Bet;
 use super::display_options::DisplayOptions;
 use super::round_state::RoundState;
 use super::scoreboard::ScoreboardCache;
@@ -13,6 +14,7 @@ pub struct Game {
     scoreboard: BaccaratScoreboard,
     cache: ScoreboardCache,
     stats: Stats,
+    bet: Bet,
     pending_round: Option<BaccaratRound>,
     shoe_number: u32,
     peel_enabled: bool,
@@ -27,6 +29,7 @@ impl Game {
             scoreboard: BaccaratScoreboard::new(),
             cache: ScoreboardCache::new(),
             stats: Stats::new(),
+            bet: Bet::new(),
             pending_round: None,
             shoe_number: 1,
             peel_enabled: false,
@@ -73,6 +76,15 @@ impl Game {
         self.scoreboard.update(round);
         self.cache.update(&self.scoreboard);
         self.stats.update(round, &self.scoreboard);
+        self.bet.settle(round.encode());
+    }
+
+    pub fn bet(&self) -> &Bet {
+        &self.bet
+    }
+
+    pub fn bet_mut(&mut self) -> &mut Bet {
+        &mut self.bet
     }
 
     pub fn stats(&self) -> &Stats {
