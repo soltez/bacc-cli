@@ -121,4 +121,8 @@ impl Game {
     pub fn next_shoe_round(&mut self) -> Option<BaccaratRound> {
         self.shoe.next_round()
     }
+
+    pub fn reset_shoe(&mut self) {
+        self.shoe.reset();
+    }
 }

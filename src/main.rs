@@ -34,7 +34,9 @@ fn run() -> io::Result<()> {
 
         if game.auto_run().is_running() && !event::poll(Duration::from_millis(40))? {
             if game.round().is_between_rounds() {
-                deal_hand(&mut game);
+                if !deal_hand(&mut game) {
+                    game.auto_run_mut().cancel();
+                }
             } else if game.round().complete() {
                 end_round(&mut game);
                 game.auto_run_mut().decrement();
@@ -64,8 +66,8 @@ fn run() -> io::Result<()> {
             KeyCode::Enter => {
                 if game.auto_run().is_inputting() {
                     handle_auto_run_confirm(&mut game);
-                    if game.auto_run().is_running() {
-                        deal_hand(&mut game);
+                    if game.auto_run().is_running() && !deal_hand(&mut game) {
+                        game.auto_run_mut().cancel();
                     }
                 } else if game.bet().input().is_some() {
                     handle_bet_enter(&mut game);

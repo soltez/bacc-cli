@@ -16,14 +16,14 @@ impl Shoe {
     }
 
     pub(super) fn next_round(&mut self) -> Option<BaccaratRound> {
-        if let Some(ref mut shoe) = self.inner
-            && let Some(r) = shoe.next()
-        {
-            return Some(r);
+        if let Some(ref mut shoe) = self.inner {
+            shoe.next()
+        } else {
+            None
         }
-        let mut shoe = new_shoe();
-        let r = shoe.next();
-        self.inner = Some(shoe);
-        r
+    }
+
+    pub(super) fn reset(&mut self) {
+        self.inner = Some(new_shoe());
     }
 }
