@@ -10,8 +10,14 @@ use crossterm::{
 use std::io;
 use std::time::Duration;
 
+use controller::auto_run::{
+    handle_auto_run_backspace, handle_auto_run_cancel, handle_auto_run_confirm,
+    handle_auto_run_digit, handle_auto_run_start,
+};
 use controller::bet::{handle_bet_backspace, handle_bet_enter, handle_bet_escape, handle_bet_key};
-use controller::deal::{advance_deal, auto_advance_delay_ms, handle_enter, should_auto_advance};
+use controller::deal::{
+    advance_deal, auto_advance_delay_ms, deal_hand, end_round, handle_enter, should_auto_advance,
+};
 use controller::settings::{toggle_peel_enabled, toggle_show_hands};
 use model::game::Game;
 use view::render::render;
@@ -25,6 +31,20 @@ fn run() -> io::Result<()> {
 
     loop {
         render(&game, &mut out)?;
+
+        if game.auto_run().is_running() && !event::poll(Duration::from_millis(40))? {
+            if game.round().is_between_rounds() {
+                if !deal_hand(&mut game) {
+                    game.auto_run_mut().cancel();
+                }
+            } else if game.round().complete() {
+                end_round(&mut game);
+                game.auto_run_mut().decrement();
+            } else {
+                advance_deal(&mut game);
+            }
+            continue;
+        }
 
         if should_auto_advance(&game)
             && !event::poll(Duration::from_millis(auto_advance_delay_ms(&game)))?
@@ -44,7 +64,12 @@ fn run() -> io::Result<()> {
         match key.code {
             KeyCode::Char('q') | KeyCode::Char('Q') => break,
             KeyCode::Enter => {
-                if game.bet().input().is_some() {
+                if game.auto_run().is_inputting() {
+                    handle_auto_run_confirm(&mut game);
+                    if game.auto_run().is_running() && !deal_hand(&mut game) {
+                        game.auto_run_mut().cancel();
+                    }
+                } else if game.bet().input().is_some() {
                     handle_bet_enter(&mut game);
                 } else {
                     handle_enter(&mut game);
@@ -52,12 +77,26 @@ fn run() -> io::Result<()> {
             }
             KeyCode::Char('h') | KeyCode::Char('H') => toggle_show_hands(&mut game),
             KeyCode::Char('e') | KeyCode::Char('E') => toggle_peel_enabled(&mut game),
-            code if game.round().is_between_rounds() => match code {
-                KeyCode::Backspace => handle_bet_backspace(&mut game),
-                KeyCode::Esc => handle_bet_escape(&mut game),
-                KeyCode::Char(ch) => handle_bet_key(&mut game, ch),
-                _ => {}
-            },
+            code if game.round().is_between_rounds() => {
+                if game.auto_run().is_inputting() {
+                    match code {
+                        KeyCode::Backspace => handle_auto_run_backspace(&mut game),
+                        KeyCode::Esc => handle_auto_run_cancel(&mut game),
+                        KeyCode::Char(ch) if ch.is_ascii_digit() => {
+                            handle_auto_run_digit(&mut game, ch)
+                        }
+                        _ => {}
+                    }
+                } else {
+                    match code {
+                        KeyCode::Char('a') | KeyCode::Char('A') => handle_auto_run_start(&mut game),
+                        KeyCode::Backspace => handle_bet_backspace(&mut game),
+                        KeyCode::Esc => handle_bet_escape(&mut game),
+                        KeyCode::Char(ch) => handle_bet_key(&mut game, ch),
+                        _ => {}
+                    }
+                }
+            }
             _ => {}
         }
     }

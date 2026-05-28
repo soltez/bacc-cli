@@ -1,5 +1,6 @@
 use bacc::{BaccaratRound, BaccaratScoreboard};
 
+use super::auto_run::AutoRun;
 use super::bet::Bet;
 use super::display_options::DisplayOptions;
 use super::round_state::RoundState;
@@ -15,6 +16,7 @@ pub struct Game {
     cache: ScoreboardCache,
     stats: Stats,
     bet: Bet,
+    auto_run: AutoRun,
     pending_round: Option<BaccaratRound>,
     shoe_number: u32,
     peel_enabled: bool,
@@ -30,6 +32,7 @@ impl Game {
             cache: ScoreboardCache::new(),
             stats: Stats::new(),
             bet: Bet::new(),
+            auto_run: AutoRun::new(),
             pending_round: None,
             shoe_number: 1,
             peel_enabled: false,
@@ -87,6 +90,14 @@ impl Game {
         &mut self.bet
     }
 
+    pub fn auto_run(&self) -> &AutoRun {
+        &self.auto_run
+    }
+
+    pub fn auto_run_mut(&mut self) -> &mut AutoRun {
+        &mut self.auto_run
+    }
+
     pub fn stats(&self) -> &Stats {
         &self.stats
     }
@@ -109,5 +120,9 @@ impl Game {
 
     pub fn next_shoe_round(&mut self) -> Option<BaccaratRound> {
         self.shoe.next_round()
+    }
+
+    pub fn reset_shoe(&mut self) {
+        self.shoe.reset();
     }
 }

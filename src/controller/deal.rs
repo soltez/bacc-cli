@@ -1,14 +1,12 @@
 use crate::model::game::Game;
 
-pub fn deal_hand(game: &mut Game) {
+pub fn deal_hand(game: &mut Game) -> bool {
     let Some(round) = game.next_shoe_round() else {
-        game.increment_shoe_number();
-        game.scoreboard_mut().clear();
-        game.scoreboard_cache_mut().clear();
-        return;
+        return false;
     };
     game.round_mut().start(&round);
     game.store_pending_round(round);
+    true
 }
 
 pub fn advance_deal(game: &mut Game) {
@@ -37,7 +35,12 @@ pub fn handle_enter(game: &mut Game) {
     if game.round().phase() != 0 && game.round().complete() {
         end_round(game);
     } else if game.round().phase() == 0 {
-        deal_hand(game);
+        if !deal_hand(game) {
+            game.increment_shoe_number();
+            game.scoreboard_mut().clear();
+            game.scoreboard_cache_mut().clear();
+            game.reset_shoe();
+        }
     } else {
         advance_deal(game);
     }
