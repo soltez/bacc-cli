@@ -38,7 +38,6 @@ pub fn handle_enter(game: &mut Game) {
         if !deal_hand(game) {
             game.increment_shoe_number();
             game.scoreboard_mut().clear();
-            game.scoreboard_cache_mut().clear();
             game.reset_shoe();
         }
     } else {

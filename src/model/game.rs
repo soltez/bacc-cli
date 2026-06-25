@@ -1,10 +1,9 @@
-use bacc::{BaccaratRound, BaccaratScoreboard};
+use bacc_core::{BaccRound, BaccScoreboard};
 
 use super::auto_run::AutoRun;
 use super::bet::Bet;
 use super::display_options::DisplayOptions;
 use super::round_state::RoundState;
-use super::scoreboard::ScoreboardCache;
 use super::shoe::Shoe;
 use super::stats::Stats;
 
@@ -12,12 +11,11 @@ pub struct Game {
     shoe: Shoe,
     display: DisplayOptions,
     round: RoundState,
-    scoreboard: BaccaratScoreboard,
-    cache: ScoreboardCache,
+    scoreboard: BaccScoreboard,
     stats: Stats,
     bet: Bet,
     auto_run: AutoRun,
-    pending_round: Option<BaccaratRound>,
+    pending_round: Option<BaccRound>,
     shoe_number: u32,
     peel_enabled: bool,
 }
@@ -28,8 +26,7 @@ impl Game {
             shoe: Shoe::new(),
             display: DisplayOptions::new(),
             round: RoundState::new(),
-            scoreboard: BaccaratScoreboard::new(),
-            cache: ScoreboardCache::new(),
+            scoreboard: BaccScoreboard::new(),
             stats: Stats::new(),
             bet: Bet::new(),
             auto_run: AutoRun::new(),
@@ -63,23 +60,18 @@ impl Game {
         self.peel_enabled = !self.peel_enabled;
     }
 
-    pub fn scoreboard_mut(&mut self) -> &mut BaccaratScoreboard {
+    pub fn scoreboard(&self) -> &BaccScoreboard {
+        &self.scoreboard
+    }
+
+    pub fn scoreboard_mut(&mut self) -> &mut BaccScoreboard {
         &mut self.scoreboard
     }
 
-    pub fn scoreboard_cache(&self) -> &ScoreboardCache {
-        &self.cache
-    }
-
-    pub fn scoreboard_cache_mut(&mut self) -> &mut ScoreboardCache {
-        &mut self.cache
-    }
-
-    pub fn update_models(&mut self, round: &BaccaratRound) {
+    pub fn update_models(&mut self, round: &BaccRound) {
         self.scoreboard.update(round);
-        self.cache.update(&self.scoreboard);
         self.stats.update(round, &self.scoreboard);
-        self.bet.settle(round.encode());
+        self.bet.settle(round.outcome().marker());
     }
 
     pub fn bet(&self) -> &Bet {
@@ -102,11 +94,11 @@ impl Game {
         &self.stats
     }
 
-    pub fn store_pending_round(&mut self, round: BaccaratRound) {
+    pub fn store_pending_round(&mut self, round: BaccRound) {
         self.pending_round = Some(round);
     }
 
-    pub fn take_pending_round(&mut self) -> Option<BaccaratRound> {
+    pub fn take_pending_round(&mut self) -> Option<BaccRound> {
         self.pending_round.take()
     }
 
@@ -118,7 +110,7 @@ impl Game {
         self.shoe_number += 1;
     }
 
-    pub fn next_shoe_round(&mut self) -> Option<BaccaratRound> {
+    pub fn next_shoe_round(&mut self) -> Option<BaccRound> {
         self.shoe.next_round()
     }
 

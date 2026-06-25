@@ -208,9 +208,9 @@ pub fn render(game: &Game, out: &mut io::Stdout) -> io::Result<()> {
     draw_scoreboard_box(game.shoe_number(), out)?;
     draw_hand_boxes(out)?;
     draw_card_panels(game.round(), game.display(), out)?;
-    draw_bead_plate(game.scoreboard_cache(), out)?;
-    draw_big_road(game.scoreboard_cache(), out)?;
-    draw_derived_roads(game.scoreboard_cache(), out)?;
+    draw_bead_plate(game.scoreboard(), out)?;
+    draw_big_road(game.scoreboard(), out)?;
+    draw_derived_roads(game.scoreboard(), out)?;
     queue!(out, ResetColor)?;
     out.flush()
 }
