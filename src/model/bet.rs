@@ -184,10 +184,10 @@ impl Bet {
         self.input = None;
     }
 
-    /// Settle bets after a round. outcome bits 1-0: 1=player, 2=banker, other=tie.
+    /// Settle bets after a round. marker: 1=player, 2=banker, other=tie.
     /// Deducts all wagered amounts then adds back stake+profit for the winning side.
-    pub fn settle(&mut self, outcome_bits: u32) {
-        match outcome_bits & 0x03 {
+    pub fn settle(&mut self, marker: u8) {
+        match marker {
             1 => {
                 self.balance = self.balance.saturating_add(
                     self.player_bet * BetPick::Player.odds_num() / BetPick::Player.odds_den() * 100,

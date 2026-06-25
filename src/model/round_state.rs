@@ -1,4 +1,4 @@
-use bacc::BaccaratRound;
+use bacc_core::BaccRound;
 use kev::{CardInt, Rank};
 
 use super::card_window::CardWindow;
@@ -34,14 +34,14 @@ impl RoundState {
         }
     }
 
-    pub fn start(&mut self, round: &BaccaratRound) {
-        let bits = round.encode();
+    pub fn start(&mut self, round: &BaccRound) {
+        let outcome = round.outcome();
         self.player_cards = round.player_cards().to_vec();
         self.banker_cards = round.banker_cards().to_vec();
-        self.player_score = ((bits >> 8) & 0xF) as u8;
-        self.banker_score = ((bits >> 12) & 0xF) as u8;
-        self.player_third = (bits >> 4) & 1 == 1;
-        self.banker_third = (bits >> 5) & 1 == 1;
+        self.player_score = outcome.player_value();
+        self.banker_score = outcome.banker_value();
+        self.player_third = outcome.thirds() & 0x1 != 0;
+        self.banker_third = outcome.thirds() & 0x2 != 0;
         self.forced_third = round.is_forced_third();
         self.phase = 10;
         self.windows = [None; 6];

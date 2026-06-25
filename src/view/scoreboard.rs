@@ -4,7 +4,7 @@ use crossterm::{
 };
 use std::io::{self, Write};
 
-use crate::model::scoreboard::ScoreboardCache;
+use bacc_core::BaccScoreboard;
 
 // Scoreboard panel
 const SCORE_COL_L: u16 = 0;
@@ -88,7 +88,7 @@ pub fn draw_scoreboard_box(shoe_number: u32, out: &mut io::Stdout) -> io::Result
     queue!(out, ResetColor)
 }
 
-pub fn draw_bead_plate(cache: &ScoreboardCache, out: &mut io::Stdout) -> io::Result<()> {
+pub fn draw_bead_plate(scoreboard: &BaccScoreboard, out: &mut io::Stdout) -> io::Result<()> {
     let bp_hdr = "[ Bead Plate ]";
     let bp_hfill = BEAD_COLS.saturating_sub(bp_hdr.len());
     let bp_hl = bp_hfill / 2;
@@ -138,86 +138,39 @@ pub fn draw_bead_plate(cache: &ScoreboardCache, out: &mut io::Stdout) -> io::Res
     )?;
     write!(out, "\u{255A}{}\u{255D}", "\u{2550}".repeat(BEAD_COLS))?;
 
-    let bead_plate = cache.bead_plate();
-    for (i, bead) in bead_plate.iter().enumerate() {
-        let outcome = bead & 0x03;
-        let hand_val = (bead >> 4) & 0x0F;
-        let col = i / BEAD_ROWS;
-        let row = i % BEAD_ROWS;
-        queue!(
-            out,
-            cursor::MoveTo(
-                SCORE_COL_INNER_L + 1 + col as u16,
-                ROW_BEAD_DATA + row as u16
-            ),
-            SetBackgroundColor(outcome_color(outcome)),
-            SetForegroundColor(Color::White)
-        )?;
-        write!(out, "{hand_val}")?;
+    // simulate_bead_plate uses ROWS=6; re-map entries to our BEAD_ROWS=3 display.
+    let grid = scoreboard.simulate_bead_plate(BEAD_COLS * 2);
+    let mut entry_idx = 0usize;
+    'outer: for column in grid.iter() {
+        for &(bead_byte, aux_byte) in column.iter() {
+            if bead_byte == 0 {
+                continue;
+            }
+            let display_col = entry_idx / BEAD_ROWS;
+            let display_row = entry_idx % BEAD_ROWS;
+            if display_col >= BEAD_COLS {
+                break 'outer;
+            }
+            let outcome = bead_byte & 0x03;
+            let hand_val = aux_byte & 0x0F;
+            queue!(
+                out,
+                cursor::MoveTo(
+                    SCORE_COL_INNER_L + 1 + display_col as u16,
+                    ROW_BEAD_DATA + display_row as u16
+                ),
+                SetBackgroundColor(outcome_color(outcome)),
+                SetForegroundColor(Color::White)
+            )?;
+            write!(out, "{hand_val}")?;
+            entry_idx += 1;
+        }
     }
 
     queue!(out, ResetColor)
 }
 
-fn simulate_big_road(columns: &[(u8, u8)]) -> [[Option<u8>; BIG_ROAD_ROWS]; BIG_ROAD_COLS] {
-    let mut grid = [[None::<u8>; BIG_ROAD_ROWS]; BIG_ROAD_COLS];
-    let mut next_col: usize = 0;
-
-    for &(marker, count) in columns {
-        // Rule 1: start in first column where row 0 is empty.
-        let mut start = next_col;
-        while start < BIG_ROAD_COLS && grid[start][0].is_some() {
-            start += 1;
-        }
-        next_col = start.saturating_add(1);
-
-        let mut col = start;
-        let mut row: usize = 0;
-        let mut going_down = true;
-        let mut remaining = count as usize;
-
-        while remaining > 0 {
-            // Rule 4: scroll left when col overflows.
-            while col >= BIG_ROAD_COLS {
-                for c in 0..BIG_ROAD_COLS - 1 {
-                    grid[c] = grid[c + 1];
-                }
-                grid[BIG_ROAD_COLS - 1] = [None; BIG_ROAD_ROWS];
-                next_col = next_col.saturating_sub(1);
-                col -= 1;
-            }
-
-            // Rule 3: same color directly below -- stop one row early, turn right.
-            if going_down && row + 1 < BIG_ROAD_ROWS && grid[col][row + 1] == Some(marker) {
-                going_down = false;
-                col += 1;
-                row = row.saturating_sub(1);
-                continue;
-            }
-
-            // Place cell.
-            grid[col][row] = Some(marker);
-            remaining -= 1;
-
-            // Rule 2: turn right when next row is occupied or bottom reached.
-            if going_down {
-                let nr = row + 1;
-                if nr < BIG_ROAD_ROWS && grid[col][nr].is_none() {
-                    row = nr;
-                } else {
-                    going_down = false;
-                    col += 1;
-                }
-            } else {
-                col += 1;
-            }
-        }
-    }
-
-    grid
-}
-
-pub fn draw_big_road(cache: &ScoreboardCache, out: &mut io::Stdout) -> io::Result<()> {
+pub fn draw_big_road(scoreboard: &BaccScoreboard, out: &mut io::Stdout) -> io::Result<()> {
     let br_hdr = "[ Big Road ]";
     let br_hfill = BEAD_COLS.saturating_sub(br_hdr.len());
     let br_hl = br_hfill / 2;
@@ -253,23 +206,24 @@ pub fn draw_big_road(cache: &ScoreboardCache, out: &mut io::Stdout) -> io::Resul
     )?;
     write!(out, "\u{255A}{}\u{255D}", "\u{2550}".repeat(BEAD_COLS))?;
 
-    let grid = simulate_big_road(cache.big_road());
+    let grid = scoreboard.simulate_big_road();
 
-    for (col, column) in grid.iter().enumerate() {
-        for (row, cell) in column.iter().enumerate().take(BIG_ROAD_ROWS) {
-            if let Some(marker) = cell {
-                let bg = outcome_color(*marker);
-                queue!(
-                    out,
-                    cursor::MoveTo(
-                        SCORE_COL_INNER_L + 1 + col as u16,
-                        ROW_BIG_ROAD_DATA + row as u16
-                    ),
-                    SetBackgroundColor(bg),
-                    SetForegroundColor(Color::White)
-                )?;
-                write!(out, "\u{25CB}")?;
+    for (col, column) in grid.iter().enumerate().take(BIG_ROAD_COLS) {
+        for (row, &(bead_byte, _)) in column.iter().enumerate().take(BIG_ROAD_ROWS) {
+            if bead_byte == 0 {
+                continue;
             }
+            let outcome = bead_byte & 0x03;
+            queue!(
+                out,
+                cursor::MoveTo(
+                    SCORE_COL_INNER_L + 1 + col as u16,
+                    ROW_BIG_ROAD_DATA + row as u16
+                ),
+                SetBackgroundColor(outcome_color(outcome)),
+                SetForegroundColor(Color::White)
+            )?;
+            write!(out, "\u{25CB}")?;
         }
     }
 
@@ -336,30 +290,59 @@ fn draw_derived_road(
     Ok(())
 }
 
-pub fn draw_derived_roads(cache: &ScoreboardCache, out: &mut io::Stdout) -> io::Result<()> {
+fn flatten_derived_grid(grid: &[[(u8, u8); 6]]) -> Vec<(u8, u8)> {
+    let mut result: Vec<(u8, u8)> = Vec::new();
+    for col in grid.iter() {
+        let count = col.iter().filter(|&&(b, _)| b != 0).count() as u8;
+        if count == 0 {
+            continue;
+        }
+        let icon = col
+            .iter()
+            .find(|&&(b, _)| b != 0)
+            .map(|&(b, _)| b & 0x03)
+            .unwrap_or(0);
+        if let Some(last) = result.last_mut()
+            && last.1 == icon
+        {
+            last.0 += count;
+            continue;
+        }
+        result.push((count, icon));
+    }
+    result
+}
+
+pub fn draw_derived_roads(scoreboard: &BaccScoreboard, out: &mut io::Stdout) -> io::Result<()> {
+    let beb = flatten_derived_grid(&scoreboard.simulate_derived_road(0));
     draw_derived_road(
         "[ Big Eye Boy ]",
-        cache.derived_road(0),
+        &beb,
         ROW_BEB_TOP,
         ROW_BEB_DATA,
         ROW_BEB_BOT,
         out,
     )?;
+
+    let sr = flatten_derived_grid(&scoreboard.simulate_derived_road(1));
     draw_derived_road(
         "[ Small Road ]",
-        cache.derived_road(1),
+        &sr,
         ROW_SR_TOP,
         ROW_SR_DATA,
         ROW_SR_BOT,
         out,
     )?;
+
+    let cp = flatten_derived_grid(&scoreboard.simulate_derived_road(2));
     draw_derived_road(
         "[ Cockroach Pig ]",
-        cache.derived_road(2),
+        &cp,
         ROW_CP_TOP,
         ROW_CP_DATA,
         ROW_CP_BOT,
         out,
     )?;
+
     queue!(out, ResetColor)
 }
